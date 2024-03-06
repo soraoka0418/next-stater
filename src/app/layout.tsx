@@ -1,3 +1,6 @@
+import muiTheme from "@/lib/muiTheme"
+import { AppRouterCacheProvider } from "@mui/material-nextjs/v14-appRouter"
+import { ThemeProvider } from "@mui/material/styles"
 import type { Metadata } from "next"
 import type { FC, ReactNode } from "react"
 import "./globals.css"
@@ -14,7 +17,11 @@ export interface RootLayoutProps {
 const RootLayout: FC<RootLayoutProps> = ({ children }) => {
 	return (
 		<html lang="ja">
-			<body>{children}</body>
+			<body>
+				<AppRouterCacheProvider>
+					<ThemeProvider theme={muiTheme}>{children}</ThemeProvider>
+				</AppRouterCacheProvider>
+			</body>
 		</html>
 	)
 }
