@@ -1,7 +1,7 @@
-import { Button } from "@/components/ui/button"
 import { render } from "@testing-library/react"
 import Link from "next/link"
 import { describe, expect, test } from "vitest"
+import { Button } from "@/components/ui/button"
 
 describe("Buttonコンポーネント", () => {
 	test("asChildがfalseの場合、buttonがレンダリングされる", () => {

@@ -1,3 +1,6 @@
+import { render } from "@testing-library/react"
+import userEvent from "@testing-library/user-event"
+import { describe, expect, test, vi } from "vitest"
 import {
 	Toast,
 	ToastAction,
@@ -7,9 +10,6 @@ import {
 	ToastTitle,
 	ToastViewport,
 } from "@/components/ui/toast"
-import { render } from "@testing-library/react"
-import userEvent from "@testing-library/user-event"
-import { describe, expect, test, vi } from "vitest"
 
 describe("ToastComponent", () => {
 	test("ToastComponentが正しくレンダリングされること", () => {

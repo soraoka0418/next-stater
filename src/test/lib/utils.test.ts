@@ -1,5 +1,5 @@
-import { cn } from "@/lib/utils"
 import { describe, expect, test } from "vitest"
+import { cn } from "@/lib/utils"
 
 describe("cn関数のテスト", () => {
 	test("単純なクラス名を正しく結合する", () => {

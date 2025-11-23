@@ -1,7 +1,7 @@
-import { Input } from "@/components/ui/input"
 import { render } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import { describe, expect, test } from "vitest"
+import { Input } from "@/components/ui/input"
 
 describe("Inputコンポーネント", () => {
 	test("コンポーネントが正しくレンダリングされること", () => {

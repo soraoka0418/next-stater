@@ -1,3 +1,6 @@
+import { render } from "@testing-library/react"
+import userEvent from "@testing-library/user-event"
+import { describe, expect, test } from "vitest"
 import {
 	Select,
 	SelectContent,
@@ -8,9 +11,6 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from "@/components/ui/select"
-import { render } from "@testing-library/react"
-import userEvent from "@testing-library/user-event"
-import { describe, expect, test } from "vitest"
 
 function TestSelect() {
 	return (
