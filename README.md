@@ -2,6 +2,27 @@ This is a [Next.js](https://nextjs.org/) project bootstrapped with [`create-next
 
 ## Getting Started
 
+### 環境変数の設定
+
+`.env.local`ファイルを作成し、以下の環境変数を設定してください：
+
+```env
+# Database
+DATABASE_URL="postgresql://user:password@localhost:5432/dbname"
+
+# NextAuth
+NEXTAUTH_SECRET="your-secret-key-here"
+NEXTAUTH_URL="http://localhost:3000"
+
+# AWS S3 Configuration (画像アップロード機能用)
+AWS_ACCESS_KEY_ID="your-access-key-id"
+AWS_SECRET_ACCESS_KEY="your-secret-access-key"
+AWS_REGION="ap-northeast-1"
+AWS_S3_BUCKET_NAME="your-bucket-name"
+```
+
+### 開発サーバーの起動
+
 First, run the development server:
 
 ```bash
