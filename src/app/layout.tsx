@@ -2,6 +2,7 @@ import type { Metadata } from "next"
 import type { FC, ReactNode } from "react"
 import "./globals.css"
 import { Inter as FontSans } from "next/font/google"
+import { Toaster } from "@/components/ui/toaster"
 import { cn } from "@/lib/utils"
 export const metadata: Metadata = {
 	title: "Create Next App",
@@ -20,7 +21,10 @@ export interface RootLayoutProps {
 const RootLayout: FC<RootLayoutProps> = ({ children }) => {
 	return (
 		<html lang="ja">
-			<body className={cn("min-h-screen bg-background font-sans antialiased", fontSans.variable)}>{children}</body>
+			<body className={cn("min-h-screen bg-background font-sans antialiased", fontSans.variable)}>
+				{children}
+				<Toaster />
+			</body>
 		</html>
 	)
 }
