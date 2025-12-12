@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { PDFDownloadButton } from "@/features/report/components/pdf-download-button"
 import { ReportImageManager } from "@/features/report/components/report-image-manager"
 import { getServerSession } from "@/lib/auth-utils"
 import { prisma } from "@/lib/prisma"
@@ -40,11 +41,16 @@ export default async function ReportEditPage({ params }: ReportEditPageProps) {
 	}
 
 	return (
-		<div className="container mx-auto py-8">
+		<div className="container mx-auto py-8 space-y-6">
 			<Card>
 				<CardHeader>
-					<CardTitle>レポート編集: {report.title}</CardTitle>
-					<CardDescription>画像をアップロードまたは削除できます</CardDescription>
+					<div className="flex items-center justify-between">
+						<div>
+							<CardTitle>レポート編集: {report.title}</CardTitle>
+							<CardDescription>画像をアップロードまたは削除できます</CardDescription>
+						</div>
+						<PDFDownloadButton reportId={reportId} />
+					</div>
 				</CardHeader>
 				<CardContent>
 					<ReportImageManager reportId={reportId} initialImages={report.images} />
