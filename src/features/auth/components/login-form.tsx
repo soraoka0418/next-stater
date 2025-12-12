@@ -20,6 +20,29 @@ const loginSchema = z.object({
 
 type LoginFormData = z.infer<typeof loginSchema>
 
+/**
+ * callbackUrlが安全かどうかを検証する
+ * 相対パス（/で始まる）または同じオリジンからのURLのみを許可
+ */
+function isValidCallbackUrl(url: string | null): boolean {
+	if (!url) return false
+
+	// 相対パスの場合（/で始まる）
+	if (url.startsWith("/")) {
+		// 相対パス内で//が含まれていないことを確認（プロトコル相対URLを防ぐ）
+		return !url.startsWith("//")
+	}
+
+	// 絶対URLの場合、同じオリジンかどうかを確認
+	try {
+		const urlObj = new URL(url, window.location.origin)
+		return urlObj.origin === window.location.origin
+	} catch {
+		// URLの解析に失敗した場合は無効
+		return false
+	}
+}
+
 export function LoginForm({ className, ...props }: React.ComponentProps<"div">) {
 	const [isLoading, setIsLoading] = useState(false)
 	const router = useRouter()
@@ -51,7 +74,8 @@ export function LoginForm({ className, ...props }: React.ComponentProps<"div">) 
 					variant: "destructive",
 				})
 			} else {
-				const callbackUrl = searchParams.get("callbackUrl") || "/dashboard"
+				const rawCallbackUrl = searchParams.get("callbackUrl")
+				const callbackUrl = rawCallbackUrl && isValidCallbackUrl(rawCallbackUrl) ? rawCallbackUrl : "/dashboard"
 				router.push(callbackUrl)
 				router.refresh()
 			}
