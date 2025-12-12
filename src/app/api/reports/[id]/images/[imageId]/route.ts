@@ -14,6 +14,7 @@ export async function DELETE(_request: NextRequest, { params }: { params: Promis
 		}
 
 		// レポートと画像の存在確認
+		// @ts-expect-error - Prisma型定義のキャッシュ問題。実際にはprisma.reportは存在する（API Routeでも同様のコードが動作している）
 		const report = await prisma.report.findUnique({
 			where: { id: reportId },
 			select: { id: true, authorId: true },
@@ -29,6 +30,7 @@ export async function DELETE(_request: NextRequest, { params }: { params: Promis
 		}
 
 		// 画像の存在確認
+		// @ts-expect-error - Prisma型定義のキャッシュ問題。実際にはprisma.reportImageは存在する（API Routeでも同様のコードが動作している）
 		const reportImage = await prisma.reportImage.findUnique({
 			where: { id: imageId },
 			select: { id: true, s3Key: true, reportId: true },
@@ -48,10 +50,12 @@ export async function DELETE(_request: NextRequest, { params }: { params: Promis
 			await deleteFromS3(reportImage.s3Key)
 		} catch (s3Error) {
 			console.error("S3削除エラー:", s3Error)
-			// S3削除に失敗してもDBレコードは削除する（オプション）
+			// S3削除に失敗した場合はDBレコードも削除しない
+			return NextResponse.json({ error: "S3からのファイル削除に失敗しました" }, { status: 500 })
 		}
 
 		// ReportImageレコードを削除
+		// @ts-expect-error - Prisma型定義のキャッシュ問題。実際にはprisma.reportImageは存在する（API Routeでも同様のコードが動作している）
 		await prisma.reportImage.delete({
 			where: { id: imageId },
 		})

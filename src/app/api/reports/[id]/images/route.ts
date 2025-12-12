@@ -1,11 +1,8 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { getServerSession } from "@/lib/auth-utils"
+import { ALLOWED_EXTENSIONS, ALLOWED_MIME_TYPES, MAX_FILE_SIZE } from "@/lib/image-constants"
 import { prisma } from "@/lib/prisma"
 import { generateS3Key, uploadToS3 } from "@/lib/s3"
-
-const MAX_FILE_SIZE = 10 * 1024 * 1024 // 10MB
-const ALLOWED_MIME_TYPES = ["image/jpeg", "image/jpg", "image/png", "image/webp"]
-const ALLOWED_EXTENSIONS = [".jpg", ".jpeg", ".png", ".webp"]
 
 function validateFile(file: File): { valid: boolean; error?: string } {
 	// ファイルサイズチェック

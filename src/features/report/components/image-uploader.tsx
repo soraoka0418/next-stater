@@ -4,10 +4,8 @@ import { Loader2, Upload, X } from "lucide-react"
 import { useCallback, useEffect, useRef, useState } from "react"
 import { Button } from "@/components/ui/button"
 import { useToast } from "@/hooks/useToast"
+import { ALLOWED_MIME_TYPES, MAX_FILE_SIZE } from "@/lib/image-constants"
 import { cn } from "@/lib/utils"
-
-const MAX_FILE_SIZE = 10 * 1024 * 1024 // 10MB
-const ALLOWED_MIME_TYPES = ["image/jpeg", "image/jpg", "image/png", "image/webp"]
 
 interface FileWithPreview extends File {
 	preview?: string
@@ -31,7 +29,13 @@ export function ImageUploader({ reportId, onUploadSuccess, className }: ImageUpl
 	const [isUploading, setIsUploading] = useState(false)
 	const [isDragging, setIsDragging] = useState(false)
 	const fileInputRef = useRef<HTMLInputElement>(null)
+	const selectedFilesRef = useRef<FileWithPreview[]>([])
 	const { toast } = useToast()
+
+	// selectedFilesの変更をrefにも反映
+	useEffect(() => {
+		selectedFilesRef.current = selectedFiles
+	}, [selectedFiles])
 
 	const validateFile = useCallback((file: File): string | null => {
 		if (file.size > MAX_FILE_SIZE) {
@@ -199,13 +203,13 @@ export function ImageUploader({ reportId, onUploadSuccess, className }: ImageUpl
 	// クリーンアップ（コンポーネントのアンマウント時）
 	useEffect(() => {
 		return () => {
-			selectedFiles.forEach((file) => {
+			selectedFilesRef.current.forEach((file) => {
 				if (file.preview) {
 					URL.revokeObjectURL(file.preview)
 				}
 			})
 		}
-	}, [selectedFiles])
+	}, []) // アンマウント時のみ実行
 
 	return (
 		<div className={cn("space-y-4", className)}>

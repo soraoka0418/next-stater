@@ -4,15 +4,7 @@ import { Loader2, X } from "lucide-react"
 import { useState } from "react"
 import { useToast } from "@/hooks/useToast"
 import { cn } from "@/lib/utils"
-
-interface ReportImage {
-	id: string
-	s3Url: string
-	s3Key: string
-	caption?: string | null
-	order: number
-	createdAt: Date
-}
+import type { ReportImage } from "@/types/report"
 
 interface ImagePreviewProps {
 	images: ReportImage[]
