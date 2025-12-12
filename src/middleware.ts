@@ -11,7 +11,12 @@ export async function middleware(request: NextRequest) {
 	const { pathname } = request.nextUrl
 
 	// 保護されたルート
-	if (pathname.startsWith("/dashboard") || pathname.startsWith("/profile") || pathname.startsWith("/admin")) {
+	if (
+		pathname.startsWith("/dashboard") ||
+		pathname.startsWith("/profile") ||
+		pathname.startsWith("/admin") ||
+		pathname.startsWith("/templates")
+	) {
 		if (!token) {
 			const loginUrl = new URL("/login", request.url)
 			loginUrl.searchParams.set("callbackUrl", pathname)
@@ -19,7 +24,10 @@ export async function middleware(request: NextRequest) {
 		}
 
 		// 管理者ルートのチェック
-		if (pathname.startsWith("/admin") && (token.role as string) !== "admin") {
+		const isTemplateAdminRoute =
+			pathname.startsWith("/templates/new") || (pathname.includes("/templates/") && pathname.endsWith("/edit"))
+
+		if ((pathname.startsWith("/admin") || isTemplateAdminRoute) && (token.role as string) !== "admin") {
 			const dashboardUrl = new URL("/dashboard", request.url)
 			return NextResponse.redirect(dashboardUrl)
 		}
