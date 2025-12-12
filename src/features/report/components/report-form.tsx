@@ -12,8 +12,10 @@ import { Field, FieldDescription, FieldGroup, FieldLabel } from "@/components/ui
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { useToast } from "@/hooks/useToast"
+import type { ReportImage } from "@/types/report"
 import type { Template, TemplateField } from "@/types/template"
 import { ImageUploader } from "./image-uploader"
+import { ReportPreview } from "./report-preview"
 
 interface ReportFormProps {
 	templates: Template[]
@@ -41,7 +43,9 @@ function createFieldSchema(fields: TemplateField[]) {
 					schema[field.key] = z.string().min(1, `${field.label}は必須です`)
 					break
 				case "number":
-					schema[field.key] = z.number({ required_error: `${field.label}は必須です` })
+					schema[field.key] = z.number().refine((val) => val !== undefined && val !== null, {
+						message: `${field.label}は必須です`,
+					})
 					break
 				case "date":
 					schema[field.key] = z.string().min(1, `${field.label}は必須です`)
@@ -78,6 +82,7 @@ export function ReportForm({ templates }: ReportFormProps) {
 	const [step, setStep] = useState<FormStep>("template")
 	const [selectedTemplate, setSelectedTemplate] = useState<Template | null>(null)
 	const [reportId, setReportId] = useState<string | null>(null)
+	const [uploadedImages, setUploadedImages] = useState<ReportImage[]>([])
 	const [isPending, startTransition] = useTransition()
 
 	const publishedTemplates = templates.filter((t) => t.currentVersion?.status === "published")
@@ -92,6 +97,7 @@ export function ReportForm({ templates }: ReportFormProps) {
 	const schema = fields.length > 0 ? createFieldSchema(fields) : z.object({ templateId: z.string(), title: z.string() })
 
 	const form = useForm<FormData>({
+		// @ts-expect-error - 動的スキーマのため型推論が困難
 		resolver: zodResolver(schema),
 		defaultValues,
 		mode: "onChange",
@@ -101,6 +107,22 @@ export function ReportForm({ templates }: ReportFormProps) {
 	const { errors, isValid } = formState
 
 	const watchedValues = watch()
+
+	// アップロード済み画像を取得
+	useEffect(() => {
+		if (reportId) {
+			fetch(`/api/reports/${reportId}`)
+				.then((res) => res.json())
+				.then((data) => {
+					if (data.report?.images) {
+						setUploadedImages(data.report.images)
+					}
+				})
+				.catch((error) => {
+					console.error("画像取得エラー:", error)
+				})
+		}
+	}, [reportId])
 
 	// テンプレート選択時にフィールドのデフォルト値を設定
 	useEffect(() => {
@@ -222,7 +244,8 @@ export function ReportForm({ templates }: ReportFormProps) {
 		}
 	}
 
-	const handleSaveDraft = async (data: FormData) => {
+	const handleSaveDraft = async (data: unknown) => {
+		const formData = data as FormData
 		startTransition(async () => {
 			try {
 				if (reportId) {
@@ -231,8 +254,8 @@ export function ReportForm({ templates }: ReportFormProps) {
 						method: "PUT",
 						headers: { "Content-Type": "application/json" },
 						body: JSON.stringify({
-							title: data.title,
-							fieldValues: data.fieldValues,
+							title: formData.title,
+							fieldValues: formData.fieldValues,
 							status: "draft",
 						}),
 					})
@@ -252,9 +275,9 @@ export function ReportForm({ templates }: ReportFormProps) {
 						method: "POST",
 						headers: { "Content-Type": "application/json" },
 						body: JSON.stringify({
-							templateId: data.templateId,
-							title: data.title,
-							fieldValues: data.fieldValues,
+							templateId: formData.templateId,
+							title: formData.title,
+							fieldValues: formData.fieldValues,
 							status: "draft",
 						}),
 					})
@@ -283,7 +306,8 @@ export function ReportForm({ templates }: ReportFormProps) {
 		})
 	}
 
-	const handleSubmitReport = async (data: FormData) => {
+	const handleSubmitReport = async (data: unknown) => {
+		const formData = data as FormData
 		startTransition(async () => {
 			try {
 				if (reportId) {
@@ -292,8 +316,8 @@ export function ReportForm({ templates }: ReportFormProps) {
 						method: "PUT",
 						headers: { "Content-Type": "application/json" },
 						body: JSON.stringify({
-							title: data.title,
-							fieldValues: data.fieldValues,
+							title: formData.title,
+							fieldValues: formData.fieldValues,
 							status: "submitted",
 						}),
 					})
@@ -316,9 +340,9 @@ export function ReportForm({ templates }: ReportFormProps) {
 						method: "POST",
 						headers: { "Content-Type": "application/json" },
 						body: JSON.stringify({
-							templateId: data.templateId,
-							title: data.title,
-							fieldValues: data.fieldValues,
+							templateId: formData.templateId,
+							title: formData.title,
+							fieldValues: formData.fieldValues,
 							status: "submitted",
 						}),
 					})
@@ -542,39 +566,80 @@ export function ReportForm({ templates }: ReportFormProps) {
 				</Card>
 			)}
 
-			{/* ステップ2: フィールド入力 */}
+			{/* ステップ2: フィールド入力（サイドパネルレイアウト） */}
 			{step === "fields" && selectedTemplate && (
-				<Card>
-					<CardHeader>
-						<CardTitle>ステップ 2: 情報入力</CardTitle>
-						<CardDescription>{selectedTemplate.name}の情報を入力してください</CardDescription>
-					</CardHeader>
-					<CardContent>
-						<FieldGroup>{fields.map((field) => renderFieldInput(field))}</FieldGroup>
-					</CardContent>
-				</Card>
+				<div className="grid grid-cols-1 lg:grid-cols-[1fr_400px] gap-6">
+					<Card>
+						<CardHeader>
+							<CardTitle>ステップ 2: 情報入力</CardTitle>
+							<CardDescription>{selectedTemplate.name}の情報を入力してください</CardDescription>
+						</CardHeader>
+						<CardContent>
+							<FieldGroup>{fields.map((field) => renderFieldInput(field))}</FieldGroup>
+						</CardContent>
+					</Card>
+					{/* リアルタイムプレビュー（デスクトップのみ表示） */}
+					<div className="hidden lg:block">
+						<ReportPreview
+							template={selectedTemplate}
+							title={watchedValues.title || ""}
+							fieldValues={watchedValues.fieldValues || {}}
+							fields={fields}
+							images={uploadedImages}
+							reportId={reportId}
+							onImageDelete={(imageId) => {
+								setUploadedImages((prev) => prev.filter((img) => img.id !== imageId))
+							}}
+						/>
+					</div>
+				</div>
 			)}
 
-			{/* ステップ3: 画像アップロード */}
+			{/* ステップ3: 画像アップロード（サイドパネルレイアウト） */}
 			{step === "images" && (
-				<Card>
-					<CardHeader>
-						<CardTitle>ステップ 3: 画像アップロード</CardTitle>
-						<CardDescription>報告書に添付する画像をアップロードしてください（任意）</CardDescription>
-					</CardHeader>
-					<CardContent>
-						{reportId ? (
-							<ImageUploader
+				<div className="grid grid-cols-1 lg:grid-cols-[1fr_400px] gap-6">
+					<Card>
+						<CardHeader>
+							<CardTitle>ステップ 3: 画像アップロード</CardTitle>
+							<CardDescription>報告書に添付する画像をアップロードしてください（任意）</CardDescription>
+						</CardHeader>
+						<CardContent>
+							{reportId ? (
+								<ImageUploader
+									reportId={reportId}
+									onUploadSuccess={(images) => {
+										// 画像アップロード成功時に画像リストを更新
+										// UploadedImageをReportImageに変換（createdAtを追加）
+										const reportImages: ReportImage[] = images.map((img) => ({
+											...img,
+											createdAt: new Date(),
+											caption: null,
+										}))
+										setUploadedImages((prev) => [...prev, ...reportImages])
+									}}
+								/>
+							) : (
+								<p className="text-sm text-muted-foreground">報告書を保存中...</p>
+							)}
+						</CardContent>
+					</Card>
+					{/* リアルタイムプレビュー（デスクトップのみ表示） */}
+					{selectedTemplate && (
+						<div className="hidden lg:block">
+							<ReportPreview
+								template={selectedTemplate}
+								title={watchedValues.title || ""}
+								fieldValues={watchedValues.fieldValues || {}}
+								fields={fields}
+								images={uploadedImages}
 								reportId={reportId}
-								onUploadSuccess={() => {
-									// 画像アップロード成功時の処理
+								onImageDelete={(imageId) => {
+									setUploadedImages((prev) => prev.filter((img) => img.id !== imageId))
 								}}
 							/>
-						) : (
-							<p className="text-sm text-muted-foreground">報告書を保存中...</p>
-						)}
-					</CardContent>
-				</Card>
+						</div>
+					)}
+				</div>
 			)}
 
 			{/* ステップ4: プレビュー */}
