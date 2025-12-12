@@ -32,6 +32,9 @@
 			},
 			"suspicious": {
 				"noUnknownAtRules": "off"
+			},
+			"a11y": {
+				"noLabelWithoutControl": "off"
 			}
 		}
 	}
