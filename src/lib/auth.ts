@@ -30,7 +30,7 @@ export const authOptions: NextAuthOptions = {
 					},
 				})
 
-				if (!user || !user.passwordHash) {
+				if (!user || !user.passwordHash || user.deletedAt) {
 					return null
 				}
 

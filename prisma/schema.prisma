@@ -22,6 +22,7 @@ model User {
   auditLogs     AuditLog[]   @relation("AuditActor")
   createdAt     DateTime     @default(now())
   updatedAt     DateTime     @updatedAt
+  deletedAt     DateTime?
 }
 
 // NextAuth.js用のモデル
