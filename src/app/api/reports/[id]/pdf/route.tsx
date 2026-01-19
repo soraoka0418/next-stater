@@ -14,7 +14,6 @@ export async function GET(_request: NextRequest, { params }: { params: Promise<{
 		}
 
 		// 報告書データを取得
-		// @ts-expect-error - Prisma型定義のキャッシュ問題。実際にはprisma.reportは存在する
 		const report = await prisma.report.findUnique({
 			where: { id },
 			include: {
@@ -70,19 +69,31 @@ export async function GET(_request: NextRequest, { params }: { params: Promise<{
 		}
 
 		// PDFドキュメントを生成
-		const pdfDocument = (
-			<PDFDocument
-				title={report.title}
-				templateName={report.template.name}
-				templateContent={templateVersion.content}
-				fields={templateVersion.fields}
-				fieldValues={fieldValues}
-				images={report.images}
-			/>
-		)
+		let pdfDocument: React.ReactElement
+		try {
+			pdfDocument = (
+				<PDFDocument
+					title={report.title}
+					templateName={report.template.name}
+					templateContent={templateVersion.content}
+					fields={templateVersion.fields}
+					fieldValues={fieldValues}
+					images={report.images}
+				/>
+			)
+		} catch (error) {
+			console.error("PDFドキュメント生成エラー:", error)
+			return NextResponse.json({ error: "PDFドキュメントの生成に失敗しました" }, { status: 500 })
+		}
 
 		// PDFをバッファにレンダリング
-		const pdfBuffer = await renderToBuffer(pdfDocument)
+		let pdfBuffer: Buffer
+		try {
+			pdfBuffer = await renderToBuffer(pdfDocument)
+		} catch (error) {
+			console.error("PDFレンダリングエラー:", error)
+			return NextResponse.json({ error: "PDFのレンダリングに失敗しました" }, { status: 500 })
+		}
 
 		// PDFファイル名を生成（タイトルから安全なファイル名を作成）
 		const safeTitle = report.title.replace(/[^a-zA-Z0-9\u3040-\u309F\u30A0-\u30FF\u4E00-\u9FAF]/g, "_")

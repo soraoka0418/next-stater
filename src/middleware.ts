@@ -1,12 +1,9 @@
 import type { NextRequest } from "next/server"
 import { NextResponse } from "next/server"
-import { getToken } from "next-auth/jwt"
+import { auth } from "@/auth"
 
 export async function middleware(request: NextRequest) {
-	const token = await getToken({
-		req: request,
-		secret: process.env.NEXTAUTH_SECRET,
-	})
+	const session = await auth()
 
 	const { pathname } = request.nextUrl
 
@@ -17,7 +14,7 @@ export async function middleware(request: NextRequest) {
 		pathname.startsWith("/admin") ||
 		pathname.startsWith("/templates")
 	) {
-		if (!token) {
+		if (!session) {
 			const loginUrl = new URL("/login", request.url)
 			loginUrl.searchParams.set("callbackUrl", pathname)
 			return NextResponse.redirect(loginUrl)
@@ -27,14 +24,14 @@ export async function middleware(request: NextRequest) {
 		const isTemplateAdminRoute =
 			pathname.startsWith("/templates/new") || (pathname.includes("/templates/") && pathname.endsWith("/edit"))
 
-		if ((pathname.startsWith("/admin") || isTemplateAdminRoute) && (token.role as string) !== "admin") {
+		if ((pathname.startsWith("/admin") || isTemplateAdminRoute) && session.user?.role !== "admin") {
 			const dashboardUrl = new URL("/dashboard", request.url)
 			return NextResponse.redirect(dashboardUrl)
 		}
 	}
 
 	// ログインページにアクセスした場合、既にログインしている場合はダッシュボードにリダイレクト
-	if (pathname.startsWith("/login") && token) {
+	if (pathname.startsWith("/login") && session) {
 		return NextResponse.redirect(new URL("/dashboard", request.url))
 	}
 

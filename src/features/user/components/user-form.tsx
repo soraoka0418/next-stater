@@ -69,7 +69,7 @@ export function UserForm({ initialUser, onSuccess, redirectTo }: UserFormProps) 
 			}
 
 			// パスワードが入力されている場合のみ送信
-			if (values.password && values.password.trim()) {
+			if (values.password?.trim()) {
 				payload.password = values.password
 			}
 

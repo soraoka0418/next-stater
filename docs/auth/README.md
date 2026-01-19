@@ -311,6 +311,153 @@ declare module "next-auth/jwt" {
 2. セッションが正しく作成されているか確認
 3. ブラウザの開発者ツールでリダイレクトを確認
 
+## NextAuth v5・Prisma 7移行
+
+### 移行概要
+
+本プロジェクトはNextAuth v5 (Auth.js) とPrisma 7に移行しました。主な変更点は以下の通りです。
+
+### NextAuth v5への移行
+
+#### 主な変更点
+
+1. **設定ファイルの再構成**
+   - `src/lib/auth.ts` (v4形式) → `src/auth.ts` (v5形式) に移動
+   - `NextAuthOptions` → `NextAuthConfig` 型に変更
+   - `auth`, `handlers`, `signIn`, `signOut` をエクスポート
+
+2. **APIルートの更新**
+   - `src/app/api/auth/[...nextauth]/route.ts` で `handlers` のみをエクスポート
+
+3. **認証ユーティリティの更新**
+   - `getServerSession()` → `auth()` に変更
+   - `src/lib/auth-utils.ts` を更新
+
+4. **ミドルウェアの更新**
+   - `getToken()` → `auth()` に変更
+   - Edge Runtime対応のため、Prisma Clientの静的インポートを削除
+
+5. **認証ロジックの分離**
+   - `src/lib/auth-credentials.ts` を作成
+   - Prisma Clientへの依存を動的インポートに変更（Edge Runtime対応）
+
+#### 環境変数の変更
+
+NextAuth v5では `AUTH_SECRET` が推奨されています（`NEXTAUTH_SECRET` も互換性のためにサポート）：
+
+```env
+# NextAuth v5推奨
+AUTH_SECRET="your-secret-key-here"
+# または（後方互換性）
+NEXTAUTH_SECRET="your-secret-key-here"
+```
+
+環境変数が設定されていない場合、起動時にエラーメッセージが表示されます。
+
+### Prisma 7への移行
+
+#### 主な変更点
+
+1. **prisma.config.tsの修正**
+   - `prisma/config` モジュールの代わりに環境変数を直接使用
+   - `dotenv/config` で環境変数を明示的に読み込み
+
+2. **schema.prismaの確認**
+   - `generator` ブロックに `output = "./generated/prisma"` が設定済み
+   - `provider = "prisma-client"` が設定済み
+
+3. **Prisma Clientのインポートパス**
+   - `src/lib/prisma.ts` で `../../prisma/generated/prisma/client` からインポート
+   - スキーマの `output` 設定と一致
+
+4. **ドライバーアダプター**
+   - `@prisma/adapter-pg` を使用（既に設定済み）
+   - JWTストラテジーを使用しているため、Prismaアダプターは不要（設定には含まれていません）
+
+### Edge Runtime対応
+
+ミドルウェアはEdge Runtimeで実行されるため、Prisma Client（Node.jsモジュール）を直接使用できません。以下の対応を実施しました：
+
+1. **認証ロジックの分離**
+   - `src/lib/auth-credentials.ts` でPrisma Clientを動的インポート
+   - `src/auth.ts` から静的インポートを削除
+
+2. **動的インポートの使用**
+   - `authorizeCredentials` 関数内で `await import("@/lib/prisma")` を使用
+   - これにより、ミドルウェアから `auth()` を呼び出しても、Prisma Clientのインポートチェーンが断たれます
+
+### 型エラーの解消
+
+1. **NextAuth関連**
+   - `NextAuthConfig` 型を使用
+   - コールバック関数のパラメータ型を明示的に定義（`JWT`, `DefaultSession`）
+   - `credentials` の型安全性を確保
+
+2. **Prisma関連**
+   - `prisma generate` を実行して型定義を再生成
+   - インポートパスの不一致を修正
+
+### エラー修正
+
+#### MissingSecretエラー
+
+環境変数 `AUTH_SECRET` または `NEXTAUTH_SECRET` が設定されていない場合にエラーメッセージを表示：
+
+```typescript
+secret: (() => {
+  const secret = process.env.AUTH_SECRET || process.env.NEXTAUTH_SECRET
+  if (!secret) {
+    throw new Error(
+      "Missing AUTH_SECRET or NEXTAUTH_SECRET environment variable. Please set one of them in your .env file."
+    )
+  }
+  return secret
+})(),
+```
+
+#### Edge Runtimeエラー
+
+Prisma ClientがEdge Runtimeで使用できない問題を解決：
+
+- `auth-credentials.ts` でPrisma Clientを動的インポート
+- `auth.ts` から静的インポートを削除
+
+### テストユーザーの作成
+
+テストユーザーを作成するスクリプトを用意しました：
+
+```bash
+npx tsx scripts/create-test-user.ts
+```
+
+デフォルトのテストユーザー：
+- Email: `test@example.com`
+- Password: `password123`
+- Role: `user`
+
+### 変更ファイル一覧
+
+#### 新規作成
+- `src/auth.ts` - NextAuth v5設定ファイル
+- `src/lib/auth-credentials.ts` - 認証ロジック（Prisma Client使用部分）
+- `scripts/create-test-user.ts` - テストユーザー作成スクリプト
+
+#### 修正
+- `src/app/api/auth/[...nextauth]/route.ts` - handlersのみをエクスポート
+- `src/lib/auth-utils.ts` - `auth()` を使用
+- `src/middleware.ts` - `auth()` を使用
+- `src/types/next-auth.d.ts` - 型定義の更新
+- `prisma.config.ts` - 環境変数の直接使用
+
+#### 削除
+- `src/lib/auth.ts` - v4形式の設定ファイル（`src/auth.ts` に移動）
+
+### 参考資料
+
+- [NextAuth v5 Migration Guide](https://authjs.dev/getting-started/migrating-to-v5)
+- [NextAuth v5 Next.js Reference](https://authjs.dev/reference/nextjs)
+- [Prisma 7 Upgrade Guide](https://www.prisma.io/docs/guides/upgrade-guides)
+
 ## 関連ドキュメント
 
 - [NextAuth.js公式ドキュメント](https://next-auth.js.org/)

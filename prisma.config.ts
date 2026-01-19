@@ -1,16 +1,17 @@
-import { defineConfig } from "@prisma/config"
-import { config } from "dotenv"
+import "dotenv/config"
 
-// .envファイルを読み込む
-config()
+import type { PrismaConfig } from "prisma"
 
-/**
- * Prisma 7 では datasource.url を schema から分離します。
- * DATABASE_URL は .env に定義してください。
- */
-export default defineConfig({
-  datasource: {
-    url: process.env.DATABASE_URL,
-  },
-})
+if (!process.env.DATABASE_URL) {
+	throw new Error("DATABASE_URL environment variable is not set")
+}
 
+export default {
+	schema: "prisma/schema.prisma",
+	migrations: {
+		path: "prisma/migrations",
+	},
+	datasource: {
+		url: process.env.DATABASE_URL,
+	},
+} satisfies PrismaConfig
